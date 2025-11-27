@@ -21,7 +21,7 @@ jobs:
         cache: maven
 
     - name: Build with Maven
-      run: mvn compile
+      run: mvn -B compile
 
 
   security_check:
@@ -32,9 +32,10 @@ jobs:
 
     - name: Install Trivy
       run: |
+        sudo apt-get update -y
         sudo apt-get install -y wget apt-transport-https gnupg lsb-release
         wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-        echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+        echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee /etc/apt/sources.list.d/trivy.list
         sudo apt-get update -y
         sudo apt-get install -y trivy
 
@@ -46,6 +47,14 @@ jobs:
 
     - name: Gitleaks Code Scan
       run: gitleaks detect -s . -r gitleaks-report.json -f json
+
+    - name: Upload Security Reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-reports
+        path: |
+          fs-report.json
+          gitleaks-report.json
 
 
   test:
@@ -62,4 +71,10 @@ jobs:
         cache: maven
 
     - name: Unit Test Cases
-      run: mvn test
+      run: mvn -B test
+
+    - name: Upload Test Report (optional)
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: target/surefire-reports
