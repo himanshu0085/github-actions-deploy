@@ -3,10 +3,11 @@ kind: Service
 metadata:
   name: portfolio-service
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: portfolio-app
   ports:
-    - port: 31568
+    - port: 80
       targetPort: 80
+      nodePort: 30080
 
