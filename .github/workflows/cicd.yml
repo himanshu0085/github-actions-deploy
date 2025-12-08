@@ -6,7 +6,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: self-hosted  # This should be a machine with Minikube available or installable
+    runs-on: self-hosted
 
     steps:
       - name: Checkout code
@@ -18,39 +18,13 @@ jobs:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build Docker image
+      - name: Build image
         run: docker build -t ${{ vars.DOCKERHUB_USERNAME }}/himanshu-portfolio:latest .
 
-      - name: Push Docker image to Docker Hub
+      - name: Push image
         run: docker push ${{ vars.DOCKERHUB_USERNAME }}/himanshu-portfolio:latest
 
-      - name: Check if kubeconfig exists
-        id: check_kubeconfig
-        run: |
-          if [ ! -f "$HOME/.kube/config" ]; then
-            echo "Kubeconfig not found. Setting up Minikube."
-            echo "KUBECONFIG=$HOME/.kube/config" >> $GITHUB_ENV
-          else
-            echo "Kubeconfig already exists."
-          fi
-
-      - name: Start Minikube if kubeconfig doesn't exist
-        if: steps.check_kubeconfig.outputs.KUBECONFIG != ''
-        run: |
-          # Install Minikube if not already installed
-          curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-          chmod +x minikube
-          sudo mv minikube /usr/local/bin/
-
-          # Start Minikube
-          minikube start --driver=docker
-
-          # Set the kubeconfig for kubectl to use
-          export KUBEV2=$(minikube -p minikube kubeconfig)
-          echo "$KUBEV2" > $HOME/.kube/config
-          echo "Minikube is up, kubeconfig set."
-
-      - name: Apply Kubernetes Manifests
+      - name: Deploy to Minikube
         run: |
           kubectl apply -f k8s/
           kubectl rollout restart deployment/portfolio-app
